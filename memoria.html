@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Memory Jar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libertinus+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="jar.css">
+</head>
+<body>
+
+<div id="app">
+  <iframe id="mesh-background" src="https://colorflow-embed.b-cdn.net/embed.html#e=3uwTiLfA" title="Animated gradient mesh background" aria-hidden="true"></iframe>
+  <div id="track">
+
+    <!-- ============ HOME ============ -->
+    <section id="page-home" class="page">
+      <div class="scene">
+        <button id="btn-shelves" class="icon-btn shelves-toggle" aria-label="Go to the shelves" title="The Shelves">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          Shelves
+        </button>
+
+        <div class="jar-stage-wrap">
+          <div class="jar-stage" id="home-jar-stage">
+            <!-- jar injected by JS -->
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="btn-add" class="cta">Add a memory</button>
+          <button id="btn-close-jar" class="subtle-btn">Close this jar</button>
+        </div>
+      </div>
+      <input type="file" id="file-input" accept="image/*" capture="environment" multiple hidden>
+    </section>
+
+    <!-- ============ SHELVES ============ -->
+    <section id="page-shelves" class="page">
+      <div class="shelves-scroll">
+        <div class="shelves-header">
+          <button id="btn-home" class="icon-btn" aria-label="Back to your jar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            Jar
+          </button>
+          <h1>The Shelves</h1>
+          <button id="btn-draw" class="dish-btn">Draw a memory</button>
+        </div>
+        <div id="shelves-container" class="shelves-container"></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- Seal jar modal -->
+<div id="seal-modal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h2>Seal this jar?</h2>
+    <p class="modal-hint">Give it a name, or leave it blank to use the dates.</p>
+    <input type="text" id="seal-title-input" maxlength="40" autocomplete="off">
+    <div class="modal-actions">
+      <button id="seal-cancel" class="text-btn">Cancel</button>
+      <button id="seal-confirm" class="cta small">Seal jar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Read-only sealed jar viewer -->
+<div id="jar-viewer" class="modal-overlay hidden">
+  <div class="viewer-topbar">
+    <button id="viewer-close" class="icon-btn" aria-label="Back to shelves">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Back
+    </button>
+    <h2 id="viewer-title" class="viewer-title"></h2>
+    <span class="viewer-spacer" aria-hidden="true"></span>
+  </div>
+  <div class="viewer-jar-stage">
+    <div class="viewer-jar-inner" id="viewer-jar-inner">
+    </div>
+  </div>
+</div>
+
+<!-- Inspect overlay -->
+<div id="inspect-overlay" class="inspect-overlay hidden"></div>
+
+<div id="toast" class="toast"></div>
+
+<script src="memory-jar.js"></script>
+</body>
+</html>
+
