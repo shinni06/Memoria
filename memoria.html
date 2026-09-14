@@ -62,6 +62,10 @@
     <h2>Seal this jar?</h2>
     <p class="modal-hint">Give it a name, or leave it blank to use the dates.</p>
     <input type="text" id="seal-title-input" maxlength="40" autocomplete="off">
+    <div class="lid-picker">
+      <span class="lid-picker-label">Jar colour</span>
+      <div id="lid-color-options" class="lid-color-options" role="radiogroup" aria-label="Choose a jar colour"></div>
+    </div>
     <div class="modal-actions">
       <button id="seal-cancel" class="text-btn">Cancel</button>
       <button id="seal-confirm" class="cta small">Seal jar</button>
@@ -90,7 +94,7 @@
 
 <div id="toast" class="toast"></div>
 
-<script src="memory-jar.js"></script>
+<script src="memoria.js"></script>
 </body>
 </html>
 

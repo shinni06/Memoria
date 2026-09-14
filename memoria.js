@@ -76,26 +76,63 @@
     toastTimer = setTimeout(function(){ el.classList.remove('show'); }, ms||2200);
   }
 
-  var LID_COLORS = ['#BFE7D4', '#CEC5F0', '#F3D88B', '#B9DFF0', '#F4CDAF'];
+  var LID_PALETTE = [
+    { name:'Random pastel', value:'random', random:true },
+    { name:'Mint', value:'#BFE7D4' },
+    { name:'Lavender', value:'#CEC5F0' },
+    { name:'Butter', value:'#F3D88B' },
+    { name:'Sky', value:'#B9DFF0' },
+    { name:'Peach', value:'#F4CDAF' }
+  ];
   var state = loadState() || {
     active: newJar(),
     sealed: []
   };
 
   function newJar(){
-    return { id:uid(), startDate: nowISO(), marbles: [], lidColor: randomLidColor() };
+    return { id:uid(), startDate: nowISO(), marbles: [], lidColor: randomLidColor(), lidMode:'random' };
   }
 
   function randomLidColor(){
-    return LID_COLORS[Math.floor(Math.random()*LID_COLORS.length)];
+    var colors = LID_PALETTE.filter(function(color){ return !color.random; });
+    return colors[Math.floor(Math.random()*colors.length)].value;
   }
 
   function lidColorFor(jar){
     if(jar.lidColor) return jar.lidColor;
     var hash = 0;
     for(var i=0;i<jar.id.length;i++) hash = (hash*31 + jar.id.charCodeAt(i)) >>> 0;
-    jar.lidColor = LID_COLORS[hash % LID_COLORS.length];
+    jar.lidColor = LID_PALETTE.filter(function(color){ return !color.random; })[hash % (LID_PALETTE.length - 1)].value;
     return jar.lidColor;
+  }
+
+  var pendingLidColor;
+  var pendingLidMode;
+
+  function renderLidPalette(selectedColor, selectedMode){
+    var options = document.getElementById('lid-color-options');
+    options.innerHTML = '';
+    LID_PALETTE.forEach(function(color){
+      var option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'lid-color-option' + (color.random ? ' random' : '');
+      if(!color.random) option.style.setProperty('--swatch-color', color.value);
+      option.title = color.name;
+      option.setAttribute('aria-label', color.name + ' jar');
+      option.setAttribute('role', 'radio');
+      option.setAttribute('aria-checked', (color.random ? selectedMode === 'random' : selectedMode !== 'random' && color.value === selectedColor) ? 'true' : 'false');
+      option.addEventListener('click', function(){
+        if(color.random){
+          pendingLidMode = 'random';
+          pendingLidColor = randomLidColor();
+        } else {
+          pendingLidMode = 'fixed';
+          pendingLidColor = color.value;
+        }
+        renderLidPalette(pendingLidColor, pendingLidMode);
+      });
+      options.appendChild(option);
+    });
   }
 
   function rgbToHsl(r,g,b){
@@ -306,7 +343,7 @@
   function buildJarElement(jarData){
     var jar = document.createElement('div');
     jar.className = 'jar';
-    jar.style.setProperty('--lid-color', lidColorFor(jarData || state.active));
+    setJarLidColor(jar, lidColorFor(jarData || state.active));
     jar.innerHTML =
       '<div class="jar-contact-shadow" aria-hidden="true"></div>' +
       '<div class="jar-body-shell" aria-hidden="true"></div>' +
@@ -314,6 +351,10 @@
       '<div class="jar-neck" aria-hidden="true"></div>' +
       '<div class="jar-lid" aria-hidden="true"></div>';
     return jar;
+  }
+
+  function setJarLidColor(jar, color){
+    jar.style.setProperty('--lid-color', color);
   }
 
   function marbleStyle(el, m){
@@ -460,6 +501,9 @@
     var placeholder = formatRange(state.active.startDate, nowISO());
     input.value = '';
     input.placeholder = placeholder;
+    pendingLidMode = state.active.lidMode || 'random';
+    pendingLidColor = pendingLidMode === 'random' ? randomLidColor() : lidColorFor(state.active);
+    renderLidPalette(pendingLidColor, pendingLidMode);
     document.getElementById('seal-modal').classList.remove('hidden');
     setTimeout(function(){ input.focus(); }, 50);
   }
@@ -472,6 +516,9 @@
     var title = input.value.trim() || input.placeholder;
     var endISO = nowISO();
     closeSealModal();
+    state.active.lidMode = pendingLidMode || 'random';
+    state.active.lidColor = pendingLidColor || randomLidColor();
+    setJarLidColor(homeJarEl, state.active.lidColor);
 
     homeJarEl.classList.add('sealing');
     setTimeout(function(){
@@ -480,6 +527,7 @@
         var sealed = {
           id: state.active.id,
           lidColor: state.active.lidColor,
+          lidMode: state.active.lidMode,
           title: title,
           dateRange: formatRange(state.active.startDate, endISO),
           startDate: state.active.startDate,
@@ -521,7 +569,7 @@
     btn.className = 'shelf-jar';
     var stage = document.createElement('div');
     stage.className = 'mini-stage';
-    renderStaticJar(stage, { id:jarData.id, lidColor:jarData.lidColor, marbles:jarData.marbles.slice(0,10) }, null);
+    renderStaticJar(stage, { id:jarData.id, lidColor:jarData.lidColor, lidMode:jarData.lidMode, marbles:jarData.marbles.slice(0,10) }, null);
     var label = document.createElement('div');
     label.className = 'shelf-jar-label';
     label.textContent = jarData.title;
