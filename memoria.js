@@ -3,8 +3,9 @@
 
   var BODY = { x:14, y:26, w:72, h:86 };
   var BOUNDS = { left:15.5, right:84.5, top:27.5, bottom:110.5, cr:15 };
-  var MARBLE_R = 8.4;
+  var MARBLE_R = 6.5;
   var GRAVITY = 640;
+  var MAX_MARBLES = 30;
   var STORAGE_KEY = 'memory-jar-state-v1';
 
   var storageAvailable = (function(){
@@ -29,9 +30,7 @@
     if(!storageAvailable) return;
     try{
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }catch(e){
-      showToast("Jar is full \u2014 this device can't save more photos");
-    }
+    }catch(e){}
   }
 
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
@@ -284,15 +283,15 @@
     else if(inRightCorner) resolveCornerCircle(m, b.right-b.cr, b.bottom-b.cr, b.cr);
     else if(inLeftTop) resolveCornerCircle(m, b.left+b.cr, b.top+b.cr, b.cr);
     else if(inRightTop) resolveCornerCircle(m, b.right-b.cr, b.top+b.cr, b.cr);
-    else if(m.y + m.r > b.bottom){ m.y = b.bottom-m.r; if(m.vy>0) m.vy*=-0.32; m.vx*=0.86; }
+    else if(m.y + m.r > b.bottom){ m.y = b.bottom-m.r; if(m.vy>0) m.vy*=-0.26; m.vx*=0.86; }
 
-    if(m.x - m.r < b.left){ m.x=b.left+m.r; if(m.vx<0) m.vx*=-0.32; }
-    if(m.x + m.r > b.right){ m.x=b.right-m.r; if(m.vx>0) m.vx*=-0.32; }
-    if(m.y - m.r < b.top){ m.y=b.top+m.r; if(m.vy<0) m.vy*=-0.2; }
+    if(m.x - m.r < b.left){ m.x=b.left+m.r; if(m.vx<0) m.vx*=-0.26; }
+    if(m.x + m.r > b.right){ m.x=b.right-m.r; if(m.vx>0) m.vx*=-0.26; }
+    if(m.y - m.r < b.top){ m.y=b.top+m.r; if(m.vy<0) m.vy*=-0.26; }
   }
 
   function resolveCollisions(list){
-    for(var pass=0; pass<2; pass++){
+    for(var pass=0; pass<6; pass++){
       for(var i=0;i<list.length;i++){
         for(var j=i+1;j<list.length;j++){
           var a=list[i], bb=list[j];
@@ -300,6 +299,7 @@
           var dist=Math.hypot(dx,dy)||0.0001;
           var minDist=a.r+bb.r;
           if(dist<minDist){
+            if(a.settled && bb.settled) continue;
             var overlap=(minDist-dist)/2;
             var nx=dx/dist, ny=dy/dist;
             if(!a.settled){ a.x-=nx*overlap; a.y-=ny*overlap; }
@@ -307,8 +307,18 @@
             var avx=(a.vx+bb.vx)/2, avy=(a.vy+bb.vy)/2;
             if(!a.settled){ a.vx=avx*0.85; a.vy=avy*0.85; }
             if(!bb.settled){ bb.vx=avx*0.85; bb.vy=avy*0.85; }
-            if(a.settled && !bb.settled){ bb.settled=false; }
-            if(bb.settled && !a.settled){ a.settled=false; }
+            if(pass === 0 && !a.settled && bb.settled && a.vy > 0 && Math.abs(dx) < a.r*0.4 && dy > 0){
+              var deflection = 12 * Math.sign(dx || (Math.random()-0.5));
+              a.vx -= deflection;
+              bb.vx += deflection;
+            }
+            if(a.settled && !bb.settled && Math.hypot(bb.vx,bb.vy) > 2){
+              a.settled=false;
+              a.sleepTimer=0;
+            } else if(bb.settled && !a.settled && Math.hypot(a.vx,a.vy) > 2){
+              bb.settled=false;
+              bb.sleepTimer=0;
+            }
           }
         }
       }
@@ -321,18 +331,24 @@
       if(m.settled) return;
       anyAwake=true;
       m.vy += GRAVITY*dt;
-      m.vx *= 0.992;
+      m.vx *= 0.985;
       m.x += m.vx*dt;
       m.y += m.vy*dt;
       resolveContainer(m);
     });
-    resolveCollisions(list);
+    if(anyAwake) resolveCollisions(list);
     list.forEach(function(m){
       if(m.settled) return;
       var speed = Math.hypot(m.vx,m.vy);
-      if(speed < 6){
+      var grounded = m.y + m.r >= BOUNDS.bottom - 0.2;
+      var supported = list.some(function(other){
+        return other !== m && other.settled && other.y > m.y &&
+          Math.abs(other.x-m.x) < m.r+other.r &&
+          other.y-m.y < m.r+other.r+0.8;
+      });
+      if((grounded || supported) && speed < 2.0){
         m.sleepTimer += dt;
-        if(m.sleepTimer > 0.22){ m.settled=true; m.vx=0; m.vy=0; }
+        if(m.sleepTimer > 0.45){ m.settled=true; m.vx=0; m.vy=0; }
       } else {
         m.sleepTimer = 0;
       }
@@ -422,13 +438,21 @@
       marblesLayer.appendChild(el);
       homeMarbleEls[m.id] = el;
     });
-    updateCloseButtonVisibility();
+    updateJarCapacityUI();
     ensurePhysicsLoop();
   }
 
-  function updateCloseButtonVisibility(){
-    var btn = document.getElementById('btn-close-jar');
-    btn.style.visibility = state.active.marbles.length > 0 ? 'visible' : 'hidden';
+  function updateJarCapacityUI(){
+    var count = state.active.marbles.length;
+    var addButton = document.getElementById('btn-add');
+    var closeButton = document.getElementById('btn-close-jar');
+    var nudging = count >= 21 && count < MAX_MARBLES;
+    var full = count >= MAX_MARBLES;
+
+    addButton.textContent = full ? 'Jar is full \u2014 seal chapter' : 'Add a memory';
+    closeButton.textContent = nudging ? 'Ready to seal this jar?' : 'Close this jar';
+    closeButton.classList.toggle('nudge', nudging);
+    closeButton.style.visibility = full || count === 0 ? 'hidden' : 'visible';
   }
 
   var lastTick = null;
@@ -438,6 +462,7 @@
     lastTick = ts;
     var awake = stepPhysics(state.active.marbles, dt);
     state.active.marbles.forEach(function(m){
+      if(m.settled) return;
       var el = homeMarbleEls[m.id];
       if(el) marbleStyle(el, m);
     });
@@ -472,7 +497,7 @@
     el.addEventListener('click', function(){ openInspectFromEl(m, el); });
     homeJarEl.querySelector('.jar-marbles').appendChild(el);
     homeMarbleEls[m.id] = el;
-    updateCloseButtonVisibility();
+    updateJarCapacityUI();
     ensurePhysicsLoop();
     saveState();
   }
@@ -538,6 +563,7 @@
         state.active = newJar();
         saveState();
         renderHomeJar({animateIn:true});
+        updateJarCapacityUI();
         renderShelves();
         showToast('Jar sealed \u2014 find it on the Shelves');
       }, 560);
@@ -569,10 +595,11 @@
     btn.className = 'shelf-jar';
     var stage = document.createElement('div');
     stage.className = 'mini-stage';
-    renderStaticJar(stage, { id:jarData.id, lidColor:jarData.lidColor, lidMode:jarData.lidMode, marbles:jarData.marbles.slice(0,10) }, null);
+    renderStaticJar(stage, { id:jarData.id, lidColor:jarData.lidColor, lidMode:jarData.lidMode, marbles:jarData.marbles }, null);
     var label = document.createElement('div');
     label.className = 'shelf-jar-label';
     label.textContent = jarData.title;
+    label.title = jarData.title;
     btn.appendChild(stage);
     btn.appendChild(label);
     btn.addEventListener('click', function(){ openJarViewer(jarData); });
@@ -764,13 +791,22 @@
   document.getElementById('btn-home').addEventListener('click', function(){ goTo('home'); });
 
   document.getElementById('btn-add').addEventListener('click', function(){
-    document.getElementById('file-input').click();
+    if(state.active.marbles.length >= MAX_MARBLES){
+      openSealModal();
+    } else {
+      document.getElementById('file-input').click();
+    }
   });
   document.getElementById('file-input').addEventListener('change', function(e){
     var files = Array.prototype.slice.call(e.target.files||[]);
     e.target.value = '';
     if(files.length===0) return;
-    files.reduce(function(chain, file, idx){
+    var remaining = MAX_MARBLES - state.active.marbles.length;
+    if(remaining <= 0){
+      return;
+    }
+    var filesToProcess = files.slice(0, remaining);
+    filesToProcess.reduce(function(chain, file, idx){
       return chain.then(function(){
         return processImage(file).then(function(data){
           addMarbleToActiveJar(data);
