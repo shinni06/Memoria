@@ -161,7 +161,25 @@
     background-position:center;
     background-repeat:no-repeat;
     cursor:pointer;
-    will-change:left, top;
+    will-change:transform;
+    backface-visibility:hidden;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-user-drag:none;
+  }
+  /* Live (home) jar: position driven purely by GPU transforms,
+     so the physics loop never triggers browser layout. */
+  .jar-live .marble{
+    left:0;
+    top:0;
+    transform:none;
+    touch-action:none;
+    cursor:grab;
+  }
+  .jar-live .marble.dragging{
+    cursor:grabbing;
+    z-index:10;
+    filter:brightness(1.06);
   }
   .marble::after{
     content:'';
