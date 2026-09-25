@@ -8,6 +8,9 @@
 .jar-neck,
 .jar-marbles,
 .jar-contact-shadow,
+.jar-glass-front,
+.jar-base,
+.jar-rim,
 .jar-lid{
   position:absolute;
 }
@@ -32,18 +35,18 @@
 
 .jar-contact-shadow::before{
   bottom:65%;
-  width:58%;
+  width:64%;
   height:4px;
-  background:rgba(60,50,80,.35);
-  box-shadow:0 0 3px rgba(60,50,80,.35);
+  background:rgba(60,50,80,.38);
+  box-shadow:0 0 4px rgba(60,50,80,.38);
 }
 
 .jar-contact-shadow::after{
   bottom:25%;
-  width:86%;
-  height:12px;
-  background:rgba(98,83,126,.13);
-  box-shadow:0 2px 8px rgba(98,83,126,.10);
+  width:88%;
+  height:13px;
+  background:rgba(98,83,126,.14);
+  box-shadow:0 2px 9px rgba(98,83,126,.12);
 }
 
 .jar-body-shell{
@@ -56,10 +59,11 @@
   border:1.5px solid rgba(255,255,255,.6);
   border-top-color:transparent;
   border-radius:22.22% / 18.6%;
-  background:rgba(255,255,255,.04);
+  background:linear-gradient(to bottom, rgba(255,255,255,.10), rgba(224,242,250,.04) 42%, rgba(186,224,242,.10) 100%);
   box-shadow:
     inset 0 -12px 16px -4px rgba(200,230,245,.45),
     inset -10px 0 18px -12px rgba(81,137,160,.42),
+    inset 10px 0 18px -12px rgba(81,137,160,.30),
     0 7px 10px -9px rgba(45,72,92,.34);
 }
 
@@ -89,6 +93,23 @@
   transform:rotate(-2deg);
 }
 
+/* Thick glass bottom, painted just above the shell and below the marbles.
+   Ends exactly at the shell's bottom edge (87.5%) so it never pokes out. */
+.jar-base{
+  left:16%;
+  top:78.5%;
+  width:68%;
+  height:9%;
+  z-index:2;
+  pointer-events:none;
+  border-radius:50%;
+  background:linear-gradient(to bottom, rgba(255,255,255,.05), rgba(196,230,246,.34) 70%, rgba(140,190,215,.42));
+  box-shadow:
+    inset 0 3px 5px rgba(255,255,255,.5),
+    inset 0 -4px 7px rgba(96,150,180,.4),
+    0 2px 4px rgba(70,110,140,.18);
+}
+
 .jar-marbles{
   left:14%;
   top:20.3125%;
@@ -100,81 +121,133 @@
   background:transparent;
 }
 
-.jar-neck{
-  left:20%;
-  top:10.5%;
-  width:60%;
-  height:16%;
+/* Front glass pane drawn OVER the marbles so they read as inside the jar:
+   diagonal sheen band + wall thickness via inset shading. */
+.jar-glass-front{
+  left:14%;
+  top:20.3125%;
+  width:72%;
+  height:67.1875%;
   z-index:4;
+  overflow:hidden;
   pointer-events:none;
-  border-radius:24% 24% 18% 18% / 34% 34% 14% 14%;
-  background:transparent;
+  border-radius:22.22% / 18.6%;
+  background:
+    linear-gradient(115deg, rgba(255,255,255,0) 32%, rgba(255,255,255,.14) 45%, rgba(255,255,255,0) 58%),
+    linear-gradient(to bottom, rgba(255,255,255,.07), rgba(255,255,255,0) 26%, rgba(255,255,255,0) 78%, rgba(88,140,170,.08) 100%);
+  box-shadow:
+    inset 12px 0 20px -12px rgba(62,112,138,.38),
+    inset -12px 0 20px -12px rgba(62,112,138,.38),
+    inset 0 10px 14px -10px rgba(255,255,255,.55),
+    inset 0 -14px 20px -12px rgba(70,120,150,.30);
 }
 
-.jar-neck::before{
-  content:"";
-  position:absolute;
-  left:-1%;
-  top:-5%;
-  width:103%;
-  height:25%;
-  border:0;
-  border-top:1.5px solid rgba(226,249,255,.82);
-  border-radius:50%;
-  background:transparent;
+/* Shoulders: glass funnel narrowing from the wide body up to the mouth. */
+.jar-neck{
+  left:14%;
+  top:12.5%;
+  width:72%;
+  height:9%;
+  z-index:4;
+  pointer-events:none;
+  background:linear-gradient(to bottom, rgba(255,255,255,.14), rgba(224,242,250,.05) 55%, rgba(186,224,242,.12) 100%);
+  clip-path:polygon(0% 100%, 27.2% 0%, 72.8% 0%, 100% 100%);
 }
 
 .jar-neck::after{
   content:"";
   position:absolute;
-  left:10%;
-  top:12%;
-  width:10%;
+  left:30%;
+  top:14%;
+  width:5.5%;
   height:64%;
   border-radius:999px;
-  background:linear-gradient(to right, rgba(255,255,255,.7), rgba(255,255,255,0));
+  background:linear-gradient(to right, rgba(255,255,255,.55), rgba(255,255,255,0));
 }
 
+/* Mouth opening: glass-thickness ellipse ring, sized to the neck. */
+.jar-rim{
+  left:32%;
+  top:9.6%;
+  width:36%;
+  height:5.2%;
+  z-index:5;
+  pointer-events:none;
+  border-radius:50%;
+  border:1.5px solid rgba(226,249,255,.75);
+  background:transparent;
+  box-shadow:
+    inset 0 2px 3px rgba(255,255,255,.42),
+    inset 0 -2px 3px rgba(96,150,180,.30),
+    0 1px 2px rgba(70,120,150,.22);
+}
+
+/* Lid: a 3D disc — top face, cylindrical wall, rolled bottom edge.
+   Children paint it; the container only animates opacity/rotation. */
 .jar-lid{
-  left:26%;
-  top:3.5%;
-  width:48%;
-  height:8%;
+  left:30%;
+  top:3.8%;
+  width:40%;
+  height:7.5%;
   z-index:6;
   opacity:0;
   pointer-events:none;
   transform:rotate(-10deg) translateY(-14%);
   transform-origin:50% 62%;
   transition:transform .6s cubic-bezier(.34,1.4,.64,1), opacity .45s ease;
-  border:1.5px solid rgba(255,255,255,.82);
-  border-radius:5% 5% 13% 13% / 12% 12% 28% 28%;
-  background:linear-gradient(to bottom, color-mix(in srgb, var(--lid-color) 82%, white) 0%, var(--lid-color) 58%, color-mix(in srgb, var(--lid-color) 72%, #6f6b86) 100%);
+}
+
+/* Cylindrical wall: lit on the left, deepening shade to the right. */
+.lid-side{
+  position:absolute;
+  left:0;
+  right:0;
+  top:22%;
+  bottom:0;
+  z-index:1;
+  border-radius:8% 8% 46% 46% / 14% 14% 62% 62%;
+  background:linear-gradient(to right,
+    color-mix(in srgb, var(--lid-color) 88%, white) 0%,
+    var(--lid-color) 32%,
+    color-mix(in srgb, var(--lid-color) 80%, #5e5878) 78%,
+    color-mix(in srgb, var(--lid-color) 64%, #55506e) 100%);
   box-shadow:
-    inset 0 2px 0 rgba(255,255,255,.86),
-    inset 0 -4px 6px rgba(72,65,100,.22),
-    0 7px 9px -5px rgba(58,44,65,.34);
+    inset 0 2px 2px rgba(255,255,255,.5),
+    0 6px 9px -4px rgba(58,44,65,.4);
 }
 
-.jar-lid::before{
-  content:"";
+/* Top face of the disc, catching the light from the upper left. */
+.lid-top{
   position:absolute;
-  left:4%;
-  right:4%;
-  top:12%;
-  height:2px;
-  border-radius:999px;
-  background:rgba(255,255,255,.7);
+  left:0;
+  right:0;
+  top:0;
+  height:56%;
+  z-index:2;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,
+    color-mix(in srgb, var(--lid-color) 45%, white) 0%,
+    color-mix(in srgb, var(--lid-color) 88%, white) 40%,
+    var(--lid-color) 70%,
+    color-mix(in srgb, var(--lid-color) 85%, #5a5474) 100%);
+  box-shadow:
+    inset 0 1px 2px rgba(255,255,255,.6),
+    inset 0 -1px 3px rgba(72,65,100,.25);
 }
 
-.jar-lid::after{
-  content:"";
+/* Rolled bottom edge: slightly narrower ellipse peeking under the wall. */
+.lid-lip{
   position:absolute;
-  left:12%;
-  right:12%;
-  bottom:18%;
-  height:2px;
-  border-radius:999px;
-  background:linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,.74), rgba(255,255,255,0));
+  left:3%;
+  right:3%;
+  bottom:-6%;
+  height:22%;
+  z-index:3;
+  border-radius:50%;
+  background:linear-gradient(to bottom,
+    color-mix(in srgb, var(--lid-color) 68%, white) 0%,
+    color-mix(in srgb, var(--lid-color) 72%, #6f6b86) 100%);
+  box-shadow:0 2px 3px rgba(58,44,65,.32);
 }
 
 .jar.sealing .jar-lid{

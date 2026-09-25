@@ -117,9 +117,16 @@
     jar.innerHTML =
       '<div class="jar-contact-shadow" aria-hidden="true"></div>' +
       '<div class="jar-body-shell" aria-hidden="true"></div>' +
+      '<div class="jar-base" aria-hidden="true"></div>' +
       '<div class="jar-marbles"></div>' +
+      '<div class="jar-glass-front" aria-hidden="true"></div>' +
       '<div class="jar-neck" aria-hidden="true"></div>' +
-      '<div class="jar-lid" aria-hidden="true"></div>';
+      '<div class="jar-rim" aria-hidden="true"></div>' +
+      '<div class="jar-lid" aria-hidden="true">' +
+        '<div class="lid-side"></div>' +
+        '<div class="lid-top"></div>' +
+        '<div class="lid-lip"></div>' +
+      '</div>';
     return jar;
   }
 
@@ -132,17 +139,30 @@
     el.style.height = (m.r * 2 / BODY.h * 100) + '%';
   }
 
+  /* Layered sphere shading: limb darkening + rim light + hot specular + soft
+     fill + photo wash, blended over the photo crop. shadowY sets the cast
+     shadow offset (3px in-jar, 14px for the draw floater). */
   function marbleVisual(m) {
     var tint = m.tint;
+    var dark = U.shade(tint, 0.52);
+    var deeper = U.shade(tint, 0.34);
+    var light = U.shade(tint, 1.18);
     return {
       backgroundImage:
-        'radial-gradient(circle at 50% 50%, rgba(255,255,255,0) 58%, rgba(255,255,255,0.42) 84%, rgba(255,255,255,0.08) 100%),' +
-        'radial-gradient(circle at 33% 26%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.42) 12%, rgba(255,255,255,0) 30%),' +
-        'radial-gradient(circle at 70% 76%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 46%),' +
-        'radial-gradient(circle at 74% 70%, rgba(38,30,50,0.45) 0%, rgba(38,30,50,0) 62%),' +
-        'radial-gradient(circle at 42% 36%, ' + U.hexToRgba(tint, 0.6) + ' 0%, ' + U.hexToRgba(U.shade(tint, 0.8), 0.6) + ' 100%),' +
+        // limb darkening: shaded lower-right edge (multiply keeps photo visible)
+        'radial-gradient(circle at 38% 32%, rgba(255,255,255,0) 46%, ' + U.hexToRgba(dark, 0.38) + ' 84%, ' + U.hexToRgba(deeper, 0.72) + ' 100%),' +
+        // rim light: thin bright arc on the shaded side keeps the silhouette round
+        'radial-gradient(circle at 50% 50%, rgba(255,255,255,0) 86%, rgba(255,255,255,0.5) 94%, rgba(255,255,255,0.08) 100%),' +
+        // hot specular highlight
+        'radial-gradient(circle at 33% 26%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.45) 10%, rgba(255,255,255,0) 26%),' +
+        // soft secondary sheen, lower right
+        'radial-gradient(circle at 70% 76%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 42%),' +
+        // anti-highlight (core shadow of the sphere)
+        'radial-gradient(circle at 74% 70%, rgba(38,30,50,0.45) 0%, rgba(38,30,50,0) 58%),' +
+        // photo wash tinted with the marble colour
+        'radial-gradient(circle at 42% 36%, ' + U.hexToRgba(tint, 0.55) + ' 0%, ' + U.hexToRgba(light, 0.42) + ' 100%),' +
         'url(' + m.squareCrop + ')',
-      backgroundBlendMode: 'screen,screen,screen,multiply,soft-light,normal'
+      backgroundBlendMode: 'multiply,screen,screen,screen,multiply,soft-light,normal'
     };
   }
 
@@ -152,8 +172,9 @@
     el.style.backgroundImage = vis.backgroundImage;
     el.style.backgroundBlendMode = vis.backgroundBlendMode;
     el.style.boxShadow =
-      'inset 0 0 0 1.2px ' + U.hexToRgba(U.shade(m.tint, 0.62), 0.3) + ', ' +
-      '0 ' + sy + 'px ' + (sy * 2.3).toFixed(1) + 'px ' + U.hexToRgba(U.shade(m.tint, 0.45), 0.28);
+      'inset 0 0 0 1.2px ' + U.hexToRgba(U.shade(m.tint, 0.55), 0.34) + ', ' +
+      'inset 0 -2px 3px ' + U.hexToRgba(U.shade(m.tint, 0.42), 0.4) + ', ' +
+      '0 ' + sy + 'px ' + (sy * 2.3).toFixed(1) + 'px ' + U.hexToRgba(U.shade(m.tint, 0.4), 0.32);
     return el;
   }
 

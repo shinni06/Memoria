@@ -1,9 +1,11 @@
-/* Photo ingestion: downscale, square crop, and derive the pastel marble tint
-   from the photo's dominant tone. */
+/* Photo ingestion: standardize every photo to a 3:4 portrait card image,
+   make a square crop for the marble, and derive the pastel marble tint from
+   the photo's dominant tone. */
 (function (global) {
   'use strict';
 
-  var MAX_EDGE = 1000;
+  var CARD_W = 750;    // card photo: exact 3:4 portrait
+  var CARD_H = 1000;
   var CROP_SIZE = 220;
   var SAMPLE_SIZE = 28;
 
@@ -66,20 +68,34 @@
     return c;
   }
 
+  /* Largest center region with the given w/h ratio that fits in the image. */
+  function centerCrop(img, ratio) {
+    var cw = Math.min(img.width, img.height * ratio);
+    var ch = cw / ratio;
+    return {
+      sx: (img.width - cw) / 2,
+      sy: (img.height - ch) / 2,
+      sw: cw,
+      sh: ch
+    };
+  }
+
   /* Returns { full, squareCrop, tint } for the given image File. */
   function processImage(file) {
     return readAsDataURL(file)
       .then(loadImage)
       .then(function (img) {
-        var full = renderScaled(img, MAX_EDGE).toDataURL('image/jpeg', 0.85);
+        // Card photo: always a full-bleed 3:4 portrait, center-cropped.
+        var c = centerCrop(img, CARD_W / CARD_H);
+        var full = renderScaled(img, CARD_W, CARD_H, c.sx, c.sy, c.sw, c.sh)
+          .toDataURL('image/jpeg', 0.85);
 
-        var side = Math.min(img.width, img.height);
-        var sx = (img.width - side) / 2;
-        var sy = (img.height - side) / 2;
-        var squareCrop = renderScaled(img, CROP_SIZE, sx, sy, side, side)
+        // Marble texture: square center crop.
+        var s = centerCrop(img, 1);
+        var squareCrop = renderScaled(img, CROP_SIZE, CROP_SIZE, s.sx, s.sy, s.sw, s.sh)
           .toDataURL('image/jpeg', 0.82);
 
-        var sample = renderScaled(img, SAMPLE_SIZE, sx, sy, side, side);
+        var sample = renderScaled(img, SAMPLE_SIZE, SAMPLE_SIZE, s.sx, s.sy, s.sw, s.sh);
         var tone = dominantColor(sample.getContext('2d').getImageData(0, 0, SAMPLE_SIZE, SAMPLE_SIZE).data);
         var tint = pastelFromColor(tone[0], tone[1], tone[2]);
 
@@ -87,16 +103,10 @@
       });
   }
 
-  /* Draw img (optionally the sx/sy/side square region) into a w×w canvas. */
-  function renderScaled(img, w, sx, sy, side) {
-    var canvas = makeCanvas(w, w);
-    var ctx = canvas.getContext('2d');
-    if (sx === undefined) {
-      var scale = Math.min(1, w / Math.max(img.width, img.height));
-      ctx.drawImage(img, 0, 0, Math.round(img.width * scale), Math.round(img.height * scale));
-    } else {
-      ctx.drawImage(img, sx, sy, side, side, 0, 0, w, w);
-    }
+  /* Draw the sx/sy/sw/sh region of img into a w×h canvas. */
+  function renderScaled(img, w, h, sx, sy, sw, sh) {
+    var canvas = makeCanvas(w, h);
+    canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
     return canvas;
   }
 

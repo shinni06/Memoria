@@ -113,10 +113,12 @@
   .icon-btn:active{ background:rgba(255,255,255,0.95); }
   .icon-btn svg{ width:16px; height:16px; display:block; }
 
+  /* Anchored to the page edge (not the centered scene) so it lines up with
+     the "Draw a memory" button on the shelves header. */
   .shelves-toggle{
     position:absolute;
-    top:calc(env(safe-area-inset-top) + 18px);
-    right:20px;
+    top:calc(env(safe-area-inset-top) + 25px);
+    right:22px;
     z-index:5;
   }
 
@@ -445,9 +447,9 @@
   }
   #jar-viewer.hidden{ display:none; }
   .viewer-topbar{
-    width:100%; max-width:520px;
+    width:100%;
     display:flex; align-items:center; justify-content:space-between;
-    padding:calc(env(safe-area-inset-top) + 14px) 20px 6px;
+    padding:calc(env(safe-area-inset-top) + 24px) 22px 6px;
     position:relative;
     z-index:2;
   }
